@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🕷️ 蜘蛛人 & 猛毒特聘 • 每日財經與市場情報戰情室 (Spider-Man & Venom Finance Hub)</title>
+  <link rel="stylesheet" href="styles.css?v=portal_bar_v8">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon-hero">🕷️</div>
+        <div>
+          <h1 class="brand-title">蜘蛛人 & 猛毒 • 每日財經戰情室</h1>
+          <span class="brand-badge">
+            <span class="dot-pulse"></span>
+            整合【財報狗 / 富果 Fugle / 籌碼K線 / XQ全球贏家 / TradingView】
+          </span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <span class="update-info" id="last-updated-time">最後更新：同步中...</span>
+        <button class="btn btn-outline" id="btn-export-modal">
+          <i data-lucide="share-2"></i> 晨報導出 / 推播
+        </button>
+        <button class="btn btn-primary" id="btn-refresh-data">
+          <span class="btn-icon-spin" id="spin-icon"><i data-lucide="refresh-cw"></i></span>
+          即時重新整理
+        </button>
+      </div>
+    </header>
+
+    <!-- Financial Research Tools Quick Portal Bar -->
+    <div class="portal-bar">
+      <span class="portal-label">🚀 專業研究工具門戶：</span>
+      <a href="https://statementdog.com/" target="_blank" class="portal-link spidey-dog" title="前往 財報狗 官方主頁">
+        🐶 財報狗 主頁 ↗
+      </a>
+      <a href="https://www.fugle.tw/" target="_blank" class="portal-link spidey-fugle" title="前往 富果 Fugle 官方主頁">
+        🐤 富果 Fugle ↗
+      </a>
+      <a href="https://www.cmoney.tw/forum/" target="_blank" class="portal-link spidey-chip" title="前往 CMoney 籌碼K線">
+        📊 籌碼K線 ↗
+      </a>
+      <a href="https://www.xq.com.tw/" target="_blank" class="portal-link spidey-xq" title="前往 XQ 全球贏家">
+        💻 XQ 全球贏家 ↗
+      </a>
+      <a href="https://www.tradingview.com/" target="_blank" class="portal-link spidey-tv" title="前往 TradingView 官方網頁">
+        📈 TradingView ↗
+      </a>
+    </div>
+
+    <!-- Market Indices Ticker Section -->
+    <section>
+      <div class="section-title">
+        <i data-lucide="trending-up"></i> 核心個股與大盤指標 (直達 富果 Fugle / 籌碼K線 / TradingView 線圖)
+      </div>
+      <div class="market-grid" id="market-cards-container">
+        <!-- Market cards dynamically injected -->
+      </div>
+    </section>
+
+    <!-- Main Content Layout Grid -->
+    <div class="main-grid">
+      <!-- Left Column: Executive Daily Briefing -->
+      <aside>
+        <div class="briefing-card" id="briefing-panel">
+          <div class="briefing-header">
+            <h2 class="briefing-title">
+              <i data-lucide="award"></i> 🕷️ 今日財經晨報 (Hero Digest)
+            </h2>
+            <div style="font-size:12px; color:var(--text-dim);" id="briefing-date">2026-09-11</div>
+          </div>
+
+          <!-- Gauge -->
+          <div class="sentiment-gauge-wrapper">
+            <div class="gauge-label-row">
+              <span style="color:var(--text-muted);">市場情緒氣壓計</span>
+              <span class="sentiment-badge bullish" id="sentiment-badge-tag">樂觀偏多</span>
+            </div>
+            <div class="gauge-bar-bg">
+              <div class="gauge-bar-fill" id="gauge-bar-fill" style="width: 75%;"></div>
+            </div>
+          </div>
+
+          <!-- Executive Summary -->
+          <div class="exec-summary-text" id="exec-summary-text">
+            載入每日 AI 高階財務導讀中...
+          </div>
+
+          <!-- Focus Themes -->
+          <div class="briefing-subhead">🔥 今日三大核心焦點</div>
+          <div id="focus-themes-container">
+            <!-- Focus items injected -->
+          </div>
+
+          <!-- Risk Warnings -->
+          <div class="risk-box" id="risk-warnings-container">
+            ⚠️ 載入市場重點警訊中...
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Column: Live News & Intelligence Stream -->
+      <main class="news-panel">
+        <!-- Controls & Filters -->
+        <div class="controls-card">
+          <div class="category-tabs" id="category-tabs">
+            <button class="tab-btn active" data-cat="ALL">全部情報</button>
+            <button class="tab-btn" data-cat="SEMICON">半導體/台股權值</button>
+            <button class="tab-btn" data-cat="US_TECH">美股科技巨頭</button>
+            <button class="tab-btn" data-cat="MACRO">總體經濟/Fed</button>
+            <button class="tab-btn" data-cat="FOREX">外匯與債券</button>
+            <button class="tab-btn" data-cat="CRYPTO">加密貨幣</button>
+            <button class="tab-btn" data-cat="COMMODITY">大宗商品</button>
+          </div>
+
+          <div class="filter-row">
+            <input type="text" class="search-input" id="news-search-input" placeholder="🔍 搜尋新聞標題、報紙來源或關鍵字 (如: 工商時報, 台積電, NVDA)...">
+            
+            <select class="select-filter" id="sentiment-select">
+              <option value="ALL">全部情緒</option>
+              <option value="BULLISH">📈 利多 (Bullish)</option>
+              <option value="BEARISH">📉 利空 (Bearish)</option>
+              <option value="NEUTRAL">⚖️ 中立 (Neutral)</option>
+            </select>
+
+            <select class="select-filter" id="impact-select">
+              <option value="ALL">全部影響層級</option>
+              <option value="HIGH">🔴 高影響力 (High)</option>
+              <option value="MEDIUM">🟡 中影響力 (Medium)</option>
+            </select>
+          </div>
+
+          <!-- Watchlist Quick Filter -->
+          <div class="watchlist-bar">
+            <span class="watchlist-label">🎯 英雄共生感應區：</span>
+            <div id="watchlist-tags-container" style="display:inline-flex; gap:6px; flex-wrap:wrap;">
+              <!-- Tags injected -->
+            </div>
+          </div>
+        </div>
+
+        <!-- News Feed Stream -->
+        <div class="news-feed" id="news-feed-container">
+          <!-- News cards injected -->
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: Export & Push Formats -->
+  <div class="modal-overlay" id="export-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">📤 晨報一鍵導出與推播格式</h3>
+        <button class="close-btn" id="close-modal-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="category-tabs" style="margin-bottom:14px;">
+          <button class="tab-btn active" id="tab-fmt-markdown">Markdown 格式</button>
+          <button class="tab-btn" id="tab-fmt-telegram">Telegram 推播格式</button>
+          <button class="tab-btn" id="tab-fmt-line">LINE Notify 格式</button>
+        </div>
+        <div class="export-code-box" id="export-code-content">
+          產出推播格式中...
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="close-modal-footer">關閉</button>
+        <button class="btn btn-primary" id="copy-export-btn">
+          <i data-lucide="copy"></i> 複製到剪貼簿
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client JavaScript -->
+  <script src="app.js?v=portal_bar_v8"></script>
+</body>
+</html>
