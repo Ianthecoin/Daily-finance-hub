@@ -1,4 +1,4 @@
-// Daily Finance Hub - Multi-Platform Stock Links (財報狗, 富果 Fugle, 籌碼K線 CMoney)
+// Daily Finance Hub - Client Logic with LINE Push Integration
 let currentCategory = "ALL";
 let currentSentiment = "ALL";
 let currentImpact = "ALL";
@@ -28,12 +28,17 @@ function initEventListeners() {
   });
 
   // Export Modal Buttons
-  document.getElementById("btn-export-modal").addEventListener("click", () => {
-    openExportModal();
-  });
+  document.getElementById("btn-export-modal").addEventListener("click", openExportModal);
   document.getElementById("close-modal-btn").addEventListener("click", closeExportModal);
   document.getElementById("close-modal-footer").addEventListener("click", closeExportModal);
   document.getElementById("copy-export-btn").addEventListener("click", copyExportContent);
+
+  // LINE Modal Buttons
+  document.getElementById("btn-line-modal").addEventListener("click", openLineModal);
+  document.getElementById("close-line-modal-btn").addEventListener("click", closeLineModal);
+  document.getElementById("btn-line-save").addEventListener("click", saveLineConfig);
+  document.getElementById("btn-line-test").addEventListener("click", testLineConnection);
+  document.getElementById("btn-line-push-now").addEventListener("click", pushLineBriefingNow);
 
   // Export Format Tabs
   document.getElementById("tab-fmt-markdown").addEventListener("click", (e) => switchExportFormat(e, "markdown"));
@@ -115,7 +120,7 @@ async function triggerManualRefresh() {
   }
 }
 
-/* Render Market Cards as Interactive Multi-Platform Hub (財報狗, 富果 Fugle, 籌碼K線, TradingView) */
+/* Render Market Cards */
 function renderMarketCards() {
   const container = document.getElementById("market-cards-container");
   if (!marketData || marketData.length === 0) {
@@ -151,7 +156,6 @@ function renderMarketCards() {
           </div>
         </a>
 
-        <!-- Quick Platform Direct Links Bar -->
         <div class="platform-links-row">
           ${platformBadgesHtml}
         </div>
@@ -166,7 +170,6 @@ function renderBriefingPanel() {
 
   document.getElementById("briefing-date").innerText = briefingData.date || "";
 
-  // Sentiment Badge & Gauge
   const badgeEl = document.getElementById("sentiment-badge-tag");
   badgeEl.innerText = briefingData.overall_sentiment || "中性觀望";
   badgeEl.className = `sentiment-badge ${briefingData.sentiment_class || "neutral"}`;
@@ -174,10 +177,8 @@ function renderBriefingPanel() {
   const gaugeFill = document.getElementById("gauge-bar-fill");
   gaugeFill.style.width = `${briefingData.sentiment_gauge || 50}%`;
 
-  // Executive Summary Text
   document.getElementById("exec-summary-text").innerText = briefingData.executive_summary || "";
 
-  // Focus Themes
   const themesContainer = document.getElementById("focus-themes-container");
   themesContainer.innerHTML = (briefingData.top_3_focus_themes || []).map(t => `
     <div class="focus-theme-item">
@@ -186,7 +187,6 @@ function renderBriefingPanel() {
     </div>
   `).join("");
 
-  // Risk Warnings
   const riskContainer = document.getElementById("risk-warnings-container");
   riskContainer.innerHTML = (briefingData.risk_warnings || []).map(r => `
     <div style="margin-bottom:4px;">${r}</div>
@@ -223,22 +223,15 @@ function renderNewsFeed() {
   const container = document.getElementById("news-feed-container");
 
   let filtered = rawNewsData.filter(item => {
-    // Category filter
     if (currentCategory !== "ALL" && item.category !== currentCategory) return false;
-
-    // Sentiment filter
     if (currentSentiment !== "ALL" && item.sentiment !== currentSentiment) return false;
-
-    // Impact filter
     if (currentImpact !== "ALL" && item.impact !== currentImpact) return false;
 
-    // Watchlist Tag filter
     if (activeWatchlistTag) {
       const text = `${item.title} ${item.content}`.toLowerCase();
       if (!text.includes(activeWatchlistTag.toLowerCase())) return false;
     }
 
-    // Search Query filter
     if (searchQuery) {
       const text = `${item.title} ${item.content} ${item.source}`.toLowerCase();
       if (!text.includes(searchQuery)) return false;
@@ -349,4 +342,109 @@ function copyExportContent() {
       copyBtn.innerHTML = origText;
     }, 2000);
   });
+}
+
+/* LINE Notification Modal Logic */
+async function openLineModal() {
+  document.getElementById("line-modal").classList.add("active");
+  const msgEl = document.getElementById("line-status-msg");
+  msgEl.innerText = "載入設定中...";
+  try {
+    const res = await fetch("/api/line/config").then(r => r.json());
+    if (res.status === "success") {
+      const cfg = res.data;
+      if (cfg.token) {
+        document.getElementById("line-token-input").placeholder = `已設定 Token (${cfg.token_masked || "******"})`;
+      }
+      document.getElementById("line-time-input").value = cfg.push_time || "08:30";
+      document.getElementById("line-enable-check").checked = cfg.enabled !== false;
+      msgEl.innerText = cfg.token ? "🟢 已連接 LINE Token" : "⚠️ 尚未設定 LINE Token";
+      msgEl.style.color = cfg.token ? "#4ade80" : "#facc15";
+    }
+  } catch (e) {
+    msgEl.innerText = "無法載入 LINE 設定";
+    msgEl.style.color = "#f87171";
+  }
+}
+
+function closeLineModal() {
+  document.getElementById("line-modal").classList.remove("active");
+}
+
+async function saveLineConfig() {
+  const token = document.getElementById("line-token-input").value.trim();
+  const timeStr = document.getElementById("line-time-input").value.trim();
+  const enabled = document.getElementById("line-enable-check").checked;
+  const msgEl = document.getElementById("line-status-msg");
+
+  msgEl.innerText = "儲存中...";
+  try {
+    const payload = { push_time: timeStr, enabled: enabled };
+    if (token) payload.token = token;
+
+    const res = await fetch("/api/line/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    }).then(r => r.json());
+
+    if (res.status === "success") {
+      msgEl.innerText = "✓ LINE 設定已成功儲存！";
+      msgEl.style.color = "#4ade80";
+    } else {
+      msgEl.innerText = `儲存失敗: ${res.message}`;
+      msgEl.style.color = "#f87171";
+    }
+  } catch (e) {
+    msgEl.innerText = "儲存連線失敗";
+    msgEl.style.color = "#f87171";
+  }
+}
+
+async function testLineConnection() {
+  const token = document.getElementById("line-token-input").value.trim();
+  const msgEl = document.getElementById("line-status-msg");
+  msgEl.innerText = "連線測試中...";
+
+  try {
+    const res = await fetch("/api/line/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: token })
+    }).then(r => r.json());
+
+    if (res.status === "success") {
+      msgEl.innerText = "✓ LINE 連線測試成功！已發送測試訊息。";
+      msgEl.style.color = "#4ade80";
+    } else {
+      msgEl.innerText = `✕ 測試失敗: ${res.message}`;
+      msgEl.style.color = "#f87171";
+    }
+  } catch (e) {
+    msgEl.innerText = "測試連線發送失敗";
+    msgEl.style.color = "#f87171";
+  }
+}
+
+async function pushLineBriefingNow() {
+  const msgEl = document.getElementById("line-status-msg");
+  msgEl.innerText = "推播今日晨報中...";
+
+  try {
+    const res = await fetch("/api/line/push_now", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    }).then(r => r.json());
+
+    if (res.status === "success") {
+      msgEl.innerText = "🚀 成功推播今日晨報至 LINE！";
+      msgEl.style.color = "#4ade80";
+    } else {
+      msgEl.innerText = `✕ 推播失敗: ${res.message}`;
+      msgEl.style.color = "#f87171";
+    }
+  } catch (e) {
+    msgEl.innerText = "發送連線失敗";
+    msgEl.style.color = "#f87171";
+  }
 }
