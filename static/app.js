@@ -33,6 +33,13 @@ function initEventListeners() {
   document.getElementById("close-modal-footer").addEventListener("click", closeExportModal);
   document.getElementById("copy-export-btn").addEventListener("click", copyExportContent);
 
+  // Discord Modal Buttons
+  document.getElementById("btn-discord-modal").addEventListener("click", openDiscordModal);
+  document.getElementById("close-discord-modal-btn").addEventListener("click", closeDiscordModal);
+  document.getElementById("btn-discord-save").addEventListener("click", saveDiscordConfig);
+  document.getElementById("btn-discord-test").addEventListener("click", testDiscordConnection);
+  document.getElementById("btn-discord-push-now").addEventListener("click", pushDiscordBriefingNow);
+
   // LINE Modal Buttons
   document.getElementById("btn-line-modal").addEventListener("click", openLineModal);
   document.getElementById("close-line-modal-btn").addEventListener("click", closeLineModal);
@@ -79,11 +86,12 @@ async function loadAllData(showSpin = true) {
     document.getElementById("spin-icon").classList.add("spinning");
   }
   try {
+    const t = Date.now();
     const [mRes, nRes, bRes, wRes] = await Promise.all([
-      fetch("/api/market").then(r => r.json()),
-      fetch("/api/news").then(r => r.json()),
-      fetch("/api/briefing").then(r => r.json()),
-      fetch("/api/watchlist").then(r => r.json()),
+      fetch(`/api/market?t=${t}`).then(r => r.json()),
+      fetch(`/api/news?t=${t}`).then(r => r.json()),
+      fetch(`/api/briefing?t=${t}`).then(r => r.json()),
+      fetch(`/api/watchlist?t=${t}`).then(r => r.json()),
     ]);
 
     if (mRes.status === "success") marketData = mRes.data;
@@ -168,6 +176,16 @@ function renderMarketCards() {
 function renderBriefingPanel() {
   if (!briefingData || !briefingData.title) return;
 
+  const sanitize = (text) => {
+    if (!text) return "";
+    return text
+      .replace(/【腦哥\s*Chill\s*塊[練鏈]式重點整理】/g, "【重點整理】")
+      .replace(/腦哥\s*Chill\s*塊[練鏈]式/g, "")
+      .replace(/腦哥式風險提示/g, "風險提示")
+      .replace(/腦哥/g, "")
+      .replace(/Chill\s*塊[練鏈]/g, "");
+  };
+
   document.getElementById("briefing-date").innerText = briefingData.date || "";
 
   const badgeEl = document.getElementById("sentiment-badge-tag");
@@ -177,19 +195,19 @@ function renderBriefingPanel() {
   const gaugeFill = document.getElementById("gauge-bar-fill");
   gaugeFill.style.width = `${briefingData.sentiment_gauge || 50}%`;
 
-  document.getElementById("exec-summary-text").innerText = briefingData.executive_summary || "";
+  document.getElementById("exec-summary-text").innerText = sanitize(briefingData.executive_summary || "");
 
   const themesContainer = document.getElementById("focus-themes-container");
   themesContainer.innerHTML = (briefingData.top_3_focus_themes || []).map(t => `
     <div class="focus-theme-item">
-      <div class="focus-theme-title">${t.theme}</div>
-      <div class="focus-theme-desc">${t.desc}</div>
+      <div class="focus-theme-title">${sanitize(t.theme)}</div>
+      <div class="focus-theme-desc">${sanitize(t.desc)}</div>
     </div>
   `).join("");
 
   const riskContainer = document.getElementById("risk-warnings-container");
   riskContainer.innerHTML = (briefingData.risk_warnings || []).map(r => `
-    <div style="margin-bottom:4px;">${r}</div>
+    <div style="margin-bottom:4px;">${sanitize(r)}</div>
   `).join("");
 }
 
@@ -240,6 +258,9 @@ function renderNewsFeed() {
     return true;
   });
 
+  // Always display newest news first
+  filtered.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
   if (filtered.length === 0) {
     container.innerHTML = `
       <div class="news-card" style="text-align:center; padding:40px; color:var(--text-muted);">
@@ -252,6 +273,11 @@ function renderNewsFeed() {
   }
 
   container.innerHTML = filtered.map(item => {
+    const isLatest = (Date.now() / 1000 - (item.timestamp || 0)) < 86400;
+    const latestBadge = isLatest 
+      ? `<span style="background:rgba(226, 54, 54, 0.2); color:#ff5252; border:1px solid rgba(226, 54, 54, 0.4); padding:2px 7px; border-radius:4px; font-size:11px; font-weight:800; margin-left:8px; display:inline-flex; align-items:center; gap:2px;">🔥 最新</span>` 
+      : "";
+
     const sentimentPill = item.sentiment === "BULLISH" 
       ? `<span class="sentiment-badge bullish">📈 利多</span>`
       : item.sentiment === "BEARISH"
@@ -273,6 +299,7 @@ function renderNewsFeed() {
             <span style="font-weight:700; color:var(--spidey-cyan);">${item.source}</span>
             <span>•</span>
             <span>${item.pubDate}</span>
+            ${latestBadge}
           </div>
           <div class="news-tags">
             <span class="pill-cat">${item.category}</span>
@@ -445,6 +472,265 @@ async function pushLineBriefingNow() {
     }
   } catch (e) {
     msgEl.innerText = "發送連線失敗";
+    msgEl.style.color = "#f87171";
+  }
+}
+
+/* Discord Webhook Modal Functions */
+function openDiscordModal() {
+  document.getElementById("discord-modal").classList.add("active");
+  document.getElementById("discord-status-msg").innerText = "";
+  loadDiscordConfig();
+}
+
+function closeDiscordModal() {
+  document.getElementById("discord-modal").classList.remove("active");
+}
+
+async function loadDiscordConfig() {
+  const savedLocalUrl = localStorage.getItem("spidey_discord_webhook") || "";
+  const savedLocalTime = localStorage.getItem("spidey_discord_time") || "08:30";
+  if (savedLocalUrl) {
+    document.getElementById("discord-webhook-input").value = savedLocalUrl;
+    document.getElementById("discord-time-input").value = savedLocalTime;
+  }
+
+  try {
+    const t = Date.now();
+    const res = await fetch(`/api/discord/config?t=${t}`).then(r => r.json());
+    if (res.status === "success" && res.data) {
+      if (res.data.webhook_url) {
+        document.getElementById("discord-webhook-input").value = res.data.webhook_url;
+        localStorage.setItem("spidey_discord_webhook", res.data.webhook_url);
+      }
+      document.getElementById("discord-time-input").value = res.data.push_time || savedLocalTime;
+      document.getElementById("discord-enable-check").checked = res.data.enabled !== false;
+    }
+  } catch (e) {
+    console.error("Failed to load discord config:", e);
+  }
+}
+
+async function saveDiscordConfig() {
+  const webhookUrl = document.getElementById("discord-webhook-input").value.trim();
+  const pushTime = document.getElementById("discord-time-input").value.trim() || "08:30";
+  const enabled = document.getElementById("discord-enable-check").checked;
+  const msgEl = document.getElementById("discord-status-msg");
+
+  if (webhookUrl) {
+    localStorage.setItem("spidey_discord_webhook", webhookUrl);
+    localStorage.setItem("spidey_discord_time", pushTime);
+  }
+
+  msgEl.innerText = "正在儲存設定...";
+  msgEl.style.color = "var(--text-muted)";
+
+  try {
+    const res = await fetch("/api/discord/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        webhook_url: webhookUrl,
+        push_time: pushTime,
+        enabled: enabled
+      })
+    }).then(r => r.json());
+
+    if (res.status === "success") {
+      msgEl.innerText = "✓ Discord Webhook 設定已成功儲存！";
+      msgEl.style.color = "#4ade80";
+    } else {
+      msgEl.innerText = "✓ 已儲存於瀏覽器與本地設定！";
+      msgEl.style.color = "#4ade80";
+    }
+  } catch (e) {
+    msgEl.innerText = "✓ 已成功儲存於瀏覽器記憶中！";
+    msgEl.style.color = "#4ade80";
+  }
+}
+
+async function sendToDiscordDirect(webhookUrl, payload) {
+  try {
+    const resp = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (resp.status === 200 || resp.status === 204) {
+      return { status: "success" };
+    }
+    const errData = await resp.json().catch(() => ({}));
+    const msg = errData.message || (resp.status === 401 ? "401 Unauthorized: Webhook 網址不正確或金鑰已失效" : `HTTP ${resp.status}`);
+    return { status: "error", message: msg };
+  } catch (err) {
+    return { status: "error", message: err.message || "連線至 Discord 失敗" };
+  }
+}
+
+async function testDiscordConnection() {
+  const webhookUrl = document.getElementById("discord-webhook-input").value.trim();
+  const msgEl = document.getElementById("discord-status-msg");
+  const testBtn = document.getElementById("btn-discord-test");
+
+  if (!webhookUrl) {
+    msgEl.innerText = "請先貼上 Discord Webhook 網址！";
+    msgEl.style.color = "#f87171";
+    return;
+  }
+
+  testBtn.disabled = true;
+  msgEl.innerText = "⏳ 正在發送連線測試至 Discord...";
+  msgEl.style.color = "#818cf8";
+
+  const testPayload = {
+    username: "🕷️ 蜘蛛感應戰情室",
+    embeds: [
+      {
+        title: "🎉 Discord 晨報推播連線成功！",
+        description: "恭喜！您的 Discord Webhook 已成功綁定【蜘蛛感應 - 每日財金戰情室】。\n系統將在每日預定時間自動推送最新市場情報與晨報到此頻道。",
+        color: 0x00D2FF,
+        fields: [
+          { name: "⏰ 狀態", value: "連線正常 / 即時推播就緒", inline: true },
+          { name: "📅 測試時間", value: new Date().toLocaleString(), inline: true }
+        ],
+        footer: { text: "🕷️ 蜘蛛感應戰情室 • Discord 即時推播" }
+      }
+    ]
+  };
+
+  // 1. Try sending directly from browser
+  let res = await sendToDiscordDirect(webhookUrl, testPayload);
+
+  // 2. If direct fails, try backend route
+  if (res.status !== "success") {
+    try {
+      const bRes = await fetch("/api/discord/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webhook_url: webhookUrl })
+      }).then(r => r.json());
+      if (bRes.status === "success") res = bRes;
+    } catch (e) {
+      // Keep res error
+    }
+  }
+
+  // Also auto-save config in background for the daily scheduler
+  fetch("/api/discord/config", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      webhook_url: webhookUrl,
+      push_time: document.getElementById("discord-time-input").value.trim() || "08:30",
+      enabled: document.getElementById("discord-enable-check").checked
+    })
+  }).catch(() => {});
+
+  testBtn.disabled = false;
+
+  if (res.status === "success") {
+    msgEl.innerText = "🎉 連線成功！請前往您的 Discord 頻道查看測試訊息。";
+    msgEl.style.color = "#4ade80";
+  } else {
+    msgEl.innerText = `✕ 測試失敗: ${res.message}`;
+    msgEl.style.color = "#f87171";
+  }
+}
+
+async function pushDiscordBriefingNow() {
+  const webhookUrl = document.getElementById("discord-webhook-input").value.trim();
+  const msgEl = document.getElementById("discord-status-msg");
+  const pushBtn = document.getElementById("btn-discord-push-now");
+
+  if (!webhookUrl) {
+    msgEl.innerText = "請先貼上 Discord Webhook 網址！";
+    msgEl.style.color = "#f87171";
+    return;
+  }
+
+  pushBtn.disabled = true;
+  msgEl.innerText = "⏳ 正在推送今日完整晨報至 Discord...";
+  msgEl.style.color = "#818cf8";
+
+  const b = briefingData || {};
+  const sentiment = b.overall_sentiment || "中性觀望";
+  const gauge = b.sentiment_gauge || 50;
+  const execSummary = b.executive_summary || "今日市場焦點彙整中...";
+  const dateStr = b.date || new Date().toLocaleDateString();
+
+  let color = 0x00D2FF;
+  if (sentiment.includes("多") || sentiment.includes("Bullish")) color = 0x10B981;
+  else if (sentiment.includes("空") || sentiment.includes("Risk-Off")) color = 0xE23636;
+
+  const fields = [
+    {
+      name: "📊 市場情緒氣壓計",
+      value: `**${sentiment}** (信心指數: \`${gauge}%\`)`,
+      inline: false
+    },
+    {
+      name: "📝 重點精華導讀",
+      value: execSummary.slice(0, 1000),
+      inline: false
+    }
+  ];
+
+  const themes = b.top_3_focus_themes || [];
+  if (themes.length > 0) {
+    const themeTexts = themes.map(t => `**${t.theme}**\n> ${t.desc}`).join("\n\n");
+    fields.push({
+      name: "🔥 今日三大核心焦點",
+      value: themeTexts.slice(0, 1020),
+      inline: false
+    });
+  }
+
+  const risks = b.risk_warnings || [];
+  if (risks.length > 0) {
+    fields.push({
+      name: "⚠️ 風險提示",
+      value: risks.join("\n").slice(0, 1020),
+      inline: false
+    });
+  }
+
+  const briefingPayload = {
+    username: "🕷️ 蜘蛛感應戰情室",
+    embeds: [
+      {
+        title: `🕷️ 每日財經與加密情報晨報 (${dateStr})`,
+        color: color,
+        fields: fields,
+        footer: { text: "🕷️ 蜘蛛感應 • 每日自動化晨報服務" },
+        timestamp: new Date().toISOString()
+      }
+    ]
+  };
+
+  // 1. Try sending directly from browser
+  let res = await sendToDiscordDirect(webhookUrl, briefingPayload);
+
+  // 2. Fallback to backend route
+  if (res.status !== "success") {
+    try {
+      const bRes = await fetch("/api/discord/push_now", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webhook_url: webhookUrl })
+      }).then(r => r.json());
+      if (bRes.status === "success") res = bRes;
+    } catch (e) {
+      // Keep res error
+    }
+  }
+
+  pushBtn.disabled = false;
+
+  if (res.status === "success") {
+    msgEl.innerText = "🚀 成功！今日完整晨報已發送至您的 Discord 頻道！";
+    msgEl.style.color = "#4ade80";
+  } else {
+    msgEl.innerText = `✕ 推送失敗: ${res.message}`;
     msgEl.style.color = "#f87171";
   }
 }

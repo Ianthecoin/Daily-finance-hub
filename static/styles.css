@@ -441,6 +441,7 @@ body {
   display: grid;
   grid-template-columns: 440px 1fr;
   gap: 24px;
+  align-items: start;
 }
 
 @media (max-width: 1100px) {
@@ -456,31 +457,31 @@ body {
   border: 1px solid var(--border-color);
   border-top: 4px solid var(--spidey-red);
   border-radius: var(--radius-lg);
-  padding: 24px;
+  padding: 20px 22px;
   box-shadow: var(--shadow-spidey);
-  position: sticky;
-  top: 20px;
+  position: relative;
+  margin-bottom: 24px;
 }
 
 .briefing-header {
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 16px;
-  margin-bottom: 18px;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .briefing-title {
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 800;
   color: var(--text-main);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .sentiment-gauge-wrapper {
-  margin: 18px 0;
-  padding: 14px;
+  margin: 12px 0;
+  padding: 10px 12px;
   background: rgba(0, 0, 0, 0.4);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
@@ -536,49 +537,52 @@ body {
 }
 
 .exec-summary-text {
-  font-size: 14px;
+  font-size: 13.5px;
+  line-height: 1.55;
   color: var(--text-main);
   background: rgba(255, 255, 255, 0.04);
-  padding: 14px;
+  padding: 10px 14px;
   border-radius: var(--radius-sm);
   border-left: 4px solid var(--spidey-red);
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
 .briefing-subhead {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 800;
   color: var(--spidey-cyan);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .focus-theme-item {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  padding: 12px 14px;
-  margin-bottom: 10px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
 }
 
 .focus-theme-title {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 800;
   color: var(--text-main);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .focus-theme-desc {
-  font-size: 12.5px;
+  font-size: 12px;
+  line-height: 1.45;
   color: var(--text-dim);
 }
 
 .risk-box {
-  margin-top: 16px;
-  padding: 12px 14px;
+  margin-top: 12px;
+  padding: 10px 12px;
   background: rgba(245, 158, 11, 0.12);
   border: 1px solid rgba(245, 158, 11, 0.35);
   border-radius: var(--radius-sm);
-  font-size: 12.5px;
+  font-size: 12px;
+  line-height: 1.45;
   color: #fcd34d;
 }
 

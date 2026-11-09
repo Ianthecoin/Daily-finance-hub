@@ -1,0 +1,23 @@
+{
+  "discord_config": {
+    "webhook_url": "",
+    "enabled": true,
+    "push_time": "08:30",
+    "last_pushed_date": ""
+  },
+  "line_config": {
+    "token": "",
+    "user_id": "",
+    "enabled": true,
+    "push_time": "08:30",
+    "last_pushed_date": ""
+  },
+  "watchlist": [
+    "工商時報",
+    "台積電",
+    "Fed 降息",
+    "輝達",
+    "鴻海",
+    "VIX"
+  ]
+}

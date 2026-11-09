@@ -10,16 +10,68 @@ import logging
 
 try:
     from market_fetcher import fetch_all_market_data
-    from rss_fetcher import fetch_all_rss_news
-    from ai_analyzer import analyze_news_list, generate_executive_briefing
-    from line_notifier import send_line_message
-    from discord_notifier import send_discord_test, send_discord_briefing
 except ImportError:
     from services.market_fetcher import fetch_all_market_data
+
+try:
+    from rss_fetcher import fetch_all_rss_news
+except ImportError:
     from services.rss_fetcher import fetch_all_rss_news
+
+try:
+    from ai_analyzer import analyze_news_list, generate_executive_briefing
+except ImportError:
     from services.ai_analyzer import analyze_news_list, generate_executive_briefing
-    from services.line_notifier import send_line_message
-    from services.discord_notifier import send_discord_test, send_discord_briefing
+
+try:
+    from line_notifier import send_line_message
+except ImportError:
+    try:
+        from services.line_notifier import send_line_message
+    except ImportError:
+        def send_line_message(*args, **kwargs):
+            return False, "LINE Notifier unavailable"
+
+try:
+    from discord_notifier import send_discord_test, send_discord_briefing
+except ImportError:
+    try:
+        from services.discord_notifier import send_discord_test, send_discord_briefing
+    except ImportError:
+        import requests as _req
+        def send_discord_test(webhook_url):
+            if not webhook_url or "api/webhooks" not in webhook_url:
+                return False, "Webhook 網址格式錯誤"
+            payload = {
+                "username": "🕷️ 蜘蛛感應戰情室",
+                "embeds": [{
+                    "title": "🎉 Discord 晨報推播連線成功！",
+                    "description": "恭喜！您的 Discord Webhook 已成功綁定【蜘蛛感應 - 每日財金戰情室】。",
+                    "color": 0x00D2FF
+                }]
+            }
+            try:
+                r = _req.post(webhook_url.strip(), json=payload, timeout=10)
+                return (True, "測試成功") if r.status_code in (200, 204) else (False, f"HTTP {r.status_code}")
+            except Exception as e:
+                return False, str(e)
+
+        def send_discord_briefing(webhook_url, briefing, market_data=None):
+            if not webhook_url or "api/webhooks" not in webhook_url:
+                return False, "Webhook 網址無效"
+            payload = {
+                "username": "🕷️ 蜘蛛感應戰情室",
+                "embeds": [{
+                    "title": briefing.get("title", "🕷️ 每日財經與加密情報晨報"),
+                    "description": briefing.get("executive_summary", ""),
+                    "color": 0x00D2FF
+                }]
+            }
+            try:
+                r = _req.post(webhook_url.strip(), json=payload, timeout=12)
+                return (True, "推播成功") if r.status_code in (200, 204) else (False, f"HTTP {r.status_code}")
+            except Exception as e:
+                return False, str(e)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("server")

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>🕷️ 蜘蛛感應 - 每日財金與加密資產新聞 (Spider Sense Finance Hub)</title>
-  <link rel="stylesheet" href="styles.css?v=crypto_sec_v11">
+  <link rel="stylesheet" href="styles.css?v=crypto_sec_v12">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 </head>
@@ -18,15 +18,18 @@
           <h1 class="brand-title">蜘蛛感應 - 每日財金新聞</h1>
           <span class="brand-badge">
             <span class="dot-pulse"></span>
-            整合【三大財經日報 / CoinDesk / Cointelegraph / SEC 監管 / 富果 / 籌碼K線】
+            整合【三大財經日報 / 律動 BlockBeats / BigGo 財經 / CoinDesk / Cointelegraph / SEC 監管 / 富果 / 籌碼K線】
           </span>
         </div>
       </div>
 
       <div class="header-actions">
         <span class="update-info" id="last-updated-time">最後更新：同步中...</span>
+        <button class="btn btn-primary" id="btn-discord-modal" style="background:#5865F2; border-color:#5865F2; font-weight:700;">
+          <i data-lucide="message-square"></i> 🎮 Discord 推播設定
+        </button>
         <button class="btn btn-outline" id="btn-line-modal" style="border-color:#22c55e; color:#22c55e;">
-          <i data-lucide="bell"></i> 🔔 LINE 推播設定
+          <i data-lucide="bell"></i> LINE 推播
         </button>
         <button class="btn btn-outline" id="btn-export-modal">
           <i data-lucide="share-2"></i> 晨報導出
@@ -41,6 +44,12 @@
     <!-- Financial & Crypto Research Tools Quick Portal Bar -->
     <div class="portal-bar">
       <span class="portal-label">🚀 專業門戶捷徑：</span>
+      <a href="https://finance.biggo.com.tw/" target="_blank" class="portal-link spidey-tv" style="border-color:#3b82f6; color:#60a5fa;" title="前往 BigGo 財經 官方首頁">
+        📊 BigGo 財經 ↗
+      </a>
+      <a href="https://www.theblockbeats.info/" target="_blank" class="portal-link spidey-tv" style="border-color:#f59e0b; color:#fbbf24;" title="前往 律動 BlockBeats 官方首頁">
+        🔥 律動 BlockBeats ↗
+      </a>
       <a href="https://www.coindesk.com/" target="_blank" class="portal-link spidey-tv" title="前往 CoinDesk 官方主頁">
         🪙 CoinDesk ↗
       </a>
@@ -86,7 +95,7 @@
             <h2 class="briefing-title">
               <i data-lucide="award"></i> 🕷️ 蜘蛛感應晨報 (Daily Digest)
             </h2>
-            <div style="font-size:12px; color:var(--text-dim);" id="briefing-date">2026-09-24</div>
+            <div style="font-size:12px; color:var(--text-dim);" id="briefing-date">2026-11-09</div>
           </div>
 
           <!-- Gauge -->
@@ -133,7 +142,7 @@
           </div>
 
           <div class="filter-row">
-            <input type="text" class="search-input" id="news-search-input" placeholder="🔍 搜尋新聞標題、來源或關鍵字 (如: SEC, CoinDesk, Gensler, 比特幣)...">
+            <input type="text" class="search-input" id="news-search-input" placeholder="🔍 搜尋新聞標題、來源或關鍵字 (如: SEC, CoinDesk, 輝達, 黃仁勳, 比特幣)...">
             
             <select class="select-filter" id="sentiment-select">
               <option value="ALL">全部情緒</option>
@@ -189,6 +198,65 @@
         <button class="btn btn-outline" id="close-modal-footer">關閉</button>
         <button class="btn btn-primary" id="copy-export-btn">
           <i data-lucide="copy"></i> 複製到剪貼簿
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Discord Notification Settings -->
+  <div class="modal-overlay" id="discord-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color:#5865F2;">🎮 Discord 自動化每日晨報推播</h3>
+        <button class="close-btn" id="close-discord-modal-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p style="font-size:13.5px; color:var(--text-muted); margin-bottom:14px;">
+          只需貼上您的 Discord 頻道 Webhook 網址，系統會在每日定時將最精華的財經與加密監管晨報，以美觀的 Discord Embed 卡片自動推送到您的伺服器頻道！
+        </p>
+
+        <div style="margin-bottom:12px;">
+          <label style="display:block; font-size:13px; font-weight:700; margin-bottom:4px; color:var(--text-main);">
+            Discord Webhook 網址 (URL)
+          </label>
+          <input type="text" id="discord-webhook-input" class="search-input" style="width:100%; font-family:monospace;" placeholder="https://discord.com/api/webhooks/...">
+        </div>
+
+        <div style="display:flex; gap:12px; margin-bottom:16px;">
+          <div style="flex:1;">
+            <label style="display:block; font-size:13px; font-weight:700; margin-bottom:4px; color:var(--text-main);">
+              每日定時推播時間
+            </label>
+            <input type="text" id="discord-time-input" class="search-input" style="width:100%;" value="08:30" placeholder="HH:MM (例如 08:30)">
+          </div>
+          <div style="flex:1; display:flex; align-items:flex-end;">
+            <label style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:700; cursor:pointer;">
+              <input type="checkbox" id="discord-enable-check" checked style="width:18px; height:18px;">
+              啟用每日自動推播
+            </label>
+          </div>
+        </div>
+
+        <div style="background:rgba(88, 101, 242, 0.12); border:1px solid rgba(88, 101, 242, 0.35); border-radius:8px; padding:12px; font-size:12.5px; color:#c7d2fe; line-height:1.6;">
+          💡 <strong>超簡單 3 步驟取得 Discord Webhook (免審核、免建立機器人)：</strong><br>
+          1. 打開 Discord，在你想接收晨報的文字頻道名稱旁點選「⚙️ <strong>編輯頻道</strong>」。<br>
+          2. 點左側「<strong>整合 (Integrations)</strong>」➔ 點選「<strong>Webhooks</strong>」➔「<strong>建立 Webhook</strong>」。<br>
+          3. 點擊「<strong>複製 Webhook 網址</strong>」，貼到上方輸入框，按下方「發送連線測試」即可！
+        </div>
+
+        <div id="discord-status-msg" style="margin-top:10px; font-size:13px; font-weight:700;"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-discord-test" style="border-color:#5865F2; color:#5865F2;">
+          🎮 發送連線測試
+        </button>
+        <button class="btn btn-primary" id="btn-discord-push-now" style="background:#5865F2;">
+          🚀 立刻推播今日晨報
+        </button>
+        <button class="btn btn-primary" id="btn-discord-save" style="background:#22c55e;">
+          💾 儲存設定
         </button>
       </div>
     </div>
@@ -254,6 +322,6 @@
   </div>
 
   <!-- Client JavaScript -->
-  <script src="app.js?v=crypto_sec_v11"></script>
+  <script src="app.js?v=discord_direct_v15"></script>
 </body>
 </html>
