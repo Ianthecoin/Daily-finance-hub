@@ -8,10 +8,18 @@ import time
 import datetime
 import logging
 
-from services.market_fetcher import fetch_all_market_data
-from services.rss_fetcher import fetch_all_rss_news
-from services.ai_analyzer import analyze_news_list, generate_executive_briefing
-from services.line_notifier import send_line_message
+try:
+    from market_fetcher import fetch_all_market_data
+    from rss_fetcher import fetch_all_rss_news
+    from ai_analyzer import analyze_news_list, generate_executive_briefing
+    from line_notifier import send_line_message
+    from discord_notifier import send_discord_test, send_discord_briefing
+except ImportError:
+    from services.market_fetcher import fetch_all_market_data
+    from services.rss_fetcher import fetch_all_rss_news
+    from services.ai_analyzer import analyze_news_list, generate_executive_briefing
+    from services.line_notifier import send_line_message
+    from services.discord_notifier import send_discord_test, send_discord_briefing
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("server")
@@ -30,6 +38,12 @@ DATA_CACHE = {
     "news": [],
     "briefing": {},
     "watchlist": ["工商時報", "台積電", "Fed 降息", "輝達", "鴻海", "VIX"],
+    "discord_config": {
+        "webhook_url": os.environ.get("DISCORD_WEBHOOK_URL", ""),
+        "enabled": True,
+        "push_time": "08:30",
+        "last_pushed_date": ""
+    },
     "line_config": {
         "token": os.environ.get("LINE_CHANNEL_ACCESS_TOKEN", ""),
         "user_id": os.environ.get("LINE_USER_ID", ""),
@@ -45,6 +59,8 @@ def load_config():
         try:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                 saved = json.load(f)
+                if "discord_config" in saved:
+                    DATA_CACHE["discord_config"].update(saved["discord_config"])
                 if "line_config" in saved:
                     DATA_CACHE["line_config"].update(saved["line_config"])
                 if "watchlist" in saved:
@@ -56,6 +72,7 @@ def save_config():
     try:
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump({
+                "discord_config": DATA_CACHE["discord_config"],
                 "line_config": DATA_CACHE["line_config"],
                 "watchlist": DATA_CACHE["watchlist"]
             }, f, ensure_ascii=False, indent=2)
@@ -81,7 +98,8 @@ refresh_all_data()
 
 class FinanceHubHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=STATIC_DIR, **kwargs)
+        target_dir = BASE_DIR if os.path.exists(os.path.join(BASE_DIR, "index.html")) else STATIC_DIR
+        super().__init__(*args, directory=target_dir, **kwargs)
 
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -125,6 +143,10 @@ class FinanceHubHandler(http.server.SimpleHTTPRequestHandler):
             self.send_json_response({"status": "success", "data": DATA_CACHE["watchlist"]})
             return
 
+        if path == "/api/discord/config":
+            self.send_json_response({"status": "success", "data": DATA_CACHE["discord_config"]})
+            return
+
         if path == "/api/line/config":
             # Mask token for security
             cfg = dict(DATA_CACHE["line_config"])
@@ -159,6 +181,32 @@ class FinanceHubHandler(http.server.SimpleHTTPRequestHandler):
                 DATA_CACHE["watchlist"] = keywords
                 save_config()
             self.send_json_response({"status": "success", "data": DATA_CACHE["watchlist"]})
+            return
+
+        if path == "/api/discord/config":
+            webhook_url = body_json.get("webhook_url")
+            enabled = body_json.get("enabled", True)
+            push_time = body_json.get("push_time", "08:30")
+            
+            if webhook_url is not None:
+                DATA_CACHE["discord_config"]["webhook_url"] = webhook_url.strip()
+            DATA_CACHE["discord_config"]["enabled"] = bool(enabled)
+            DATA_CACHE["discord_config"]["push_time"] = push_time
+            save_config()
+
+            self.send_json_response({"status": "success", "message": "Discord Webhook 設定已儲存", "data": DATA_CACHE["discord_config"]})
+            return
+
+        if path == "/api/discord/test":
+            webhook_url = body_json.get("webhook_url") or DATA_CACHE["discord_config"]["webhook_url"]
+            ok, msg = send_discord_test(webhook_url)
+            self.send_json_response({"status": "success" if ok else "error", "message": msg})
+            return
+
+        if path == "/api/discord/push_now":
+            webhook_url = body_json.get("webhook_url") or DATA_CACHE["discord_config"]["webhook_url"]
+            ok, msg = send_discord_briefing(webhook_url, DATA_CACHE["briefing"], DATA_CACHE["market"])
+            self.send_json_response({"status": "success" if ok else "error", "message": msg})
             return
 
         if path == "/api/line/config":
@@ -267,11 +315,23 @@ def start_background_scheduler(interval_seconds=900):
             now_str = datetime.datetime.now().strftime("%H:%M")
             today_date = datetime.datetime.now().strftime("%Y-%m-%d")
             
+            # Check Discord Daily Push
+            d_cfg = DATA_CACHE["discord_config"]
+            if d_cfg.get("enabled") and d_cfg.get("webhook_url") and d_cfg.get("push_time") == now_str:
+                if d_cfg.get("last_pushed_date") != today_date:
+                    logger.info("Executing scheduled daily Discord push notification...")
+                    refresh_all_data()
+                    ok, msg = send_discord_briefing(d_cfg["webhook_url"], DATA_CACHE["briefing"], DATA_CACHE["market"])
+                    if ok:
+                        d_cfg["last_pushed_date"] = today_date
+                        save_config()
+                        logger.info("Daily Discord push completed successfully!")
+
+            # Check LINE Daily Push
             cfg = DATA_CACHE["line_config"]
             if cfg.get("enabled") and cfg.get("token") and cfg.get("push_time") == now_str:
                 if cfg.get("last_pushed_date") != today_date:
                     logger.info("Executing scheduled daily LINE push notification...")
-                    # Refresh data before push
                     refresh_all_data()
                     msg_text = FinanceHubHandler.generate_export_format(None, "line")
                     ok, msg = send_line_message(cfg["token"], msg_text, cfg.get("user_id"))
