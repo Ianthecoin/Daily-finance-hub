@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🕷️ 蜘蛛感應 - 每日財金與加密資產新聞 (Spider Sense Finance Hub)</title>
+  <link rel="stylesheet" href="styles.css?v=crypto_sec_v11">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon-hero">🕷️</div>
+        <div>
+          <h1 class="brand-title">蜘蛛感應 - 每日財金新聞</h1>
+          <span class="brand-badge">
+            <span class="dot-pulse"></span>
+            整合【三大財經日報 / CoinDesk / Cointelegraph / SEC 監管 / 富果 / 籌碼K線】
+          </span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <span class="update-info" id="last-updated-time">最後更新：同步中...</span>
+        <button class="btn btn-outline" id="btn-line-modal" style="border-color:#22c55e; color:#22c55e;">
+          <i data-lucide="bell"></i> 🔔 LINE 推播設定
+        </button>
+        <button class="btn btn-outline" id="btn-export-modal">
+          <i data-lucide="share-2"></i> 晨報導出
+        </button>
+        <button class="btn btn-primary" id="btn-refresh-data">
+          <span class="btn-icon-spin" id="spin-icon"><i data-lucide="refresh-cw"></i></span>
+          即時重新整理
+        </button>
+      </div>
+    </header>
+
+    <!-- Financial & Crypto Research Tools Quick Portal Bar -->
+    <div class="portal-bar">
+      <span class="portal-label">🚀 專業門戶捷徑：</span>
+      <a href="https://www.coindesk.com/" target="_blank" class="portal-link spidey-tv" title="前往 CoinDesk 官方主頁">
+        🪙 CoinDesk ↗
+      </a>
+      <a href="https://cointelegraph.com/" target="_blank" class="portal-link spidey-dog" title="前往 Cointelegraph 官方主頁">
+        ⚡ Cointelegraph ↗
+      </a>
+      <a href="https://decrypt.co/" target="_blank" class="portal-link spidey-xq" title="前往 Decrypt 官方網頁">
+        🔓 Decrypt ↗
+      </a>
+      <a href="https://www.sec.gov/news/press-releases" target="_blank" class="portal-link spidey-chip" title="前往 美國 SEC 官方新聞與監管公告">
+        🏛️ 美國 SEC 官網 ↗
+      </a>
+      <a href="https://coinmarketcap.com/" target="_blank" class="portal-link spidey-fugle" title="前往 CoinMarketCap">
+        📊 CoinMarketCap ↗
+      </a>
+      <a href="https://statementdog.com/" target="_blank" class="portal-link spidey-dog" title="前往 財報狗 官方主頁">
+        🐶 財報狗 ↗
+      </a>
+      <a href="https://www.fugle.tw/" target="_blank" class="portal-link spidey-fugle" title="前往 富果 Fugle 官方主頁">
+        🐤 富果 ↗
+      </a>
+      <a href="https://www.cmoney.tw/forum/" target="_blank" class="portal-link spidey-chip" title="前往 CMoney 籌碼K線">
+        📊 籌碼K線 ↗
+      </a>
+    </div>
+
+    <!-- Market Indices Ticker Section -->
+    <section>
+      <div class="section-title">
+        <i data-lucide="trending-up"></i> 核心個股與大盤指標 (直達 富果 Fugle / 籌碼K線 / TradingView 線圖)
+      </div>
+      <div class="market-grid" id="market-cards-container">
+        <!-- Market cards dynamically injected -->
+      </div>
+    </section>
+
+    <!-- Main Content Layout Grid -->
+    <div class="main-grid">
+      <!-- Left Column: Executive Daily Briefing -->
+      <aside>
+        <div class="briefing-card" id="briefing-panel">
+          <div class="briefing-header">
+            <h2 class="briefing-title">
+              <i data-lucide="award"></i> 🕷️ 蜘蛛感應晨報 (Daily Digest)
+            </h2>
+            <div style="font-size:12px; color:var(--text-dim);" id="briefing-date">2026-09-24</div>
+          </div>
+
+          <!-- Gauge -->
+          <div class="sentiment-gauge-wrapper">
+            <div class="gauge-label-row">
+              <span style="color:var(--text-muted);">市場情緒氣壓計</span>
+              <span class="sentiment-badge bullish" id="sentiment-badge-tag">樂觀偏多</span>
+            </div>
+            <div class="gauge-bar-bg">
+              <div class="gauge-bar-fill" id="gauge-bar-fill" style="width: 75%;"></div>
+            </div>
+          </div>
+
+          <!-- Executive Summary -->
+          <div class="exec-summary-text" id="exec-summary-text">
+            載入每日 AI 高階財務與加密監管導讀中...
+          </div>
+
+          <!-- Focus Themes -->
+          <div class="briefing-subhead">🔥 今日三大核心焦點</div>
+          <div id="focus-themes-container">
+            <!-- Focus items injected -->
+          </div>
+
+          <!-- Risk Warnings -->
+          <div class="risk-box" id="risk-warnings-container">
+            ⚠️ 載入市場與監管重點警訊中...
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Column: Live News & Intelligence Stream -->
+      <main class="news-panel">
+        <!-- Controls & Filters -->
+        <div class="controls-card">
+          <div class="category-tabs" id="category-tabs">
+            <button class="tab-btn active" data-cat="ALL">全部情報</button>
+            <button class="tab-btn" data-cat="CRYPTO">🪙 加密資產與 SEC 監管</button>
+            <button class="tab-btn" data-cat="SEMICON">半導體/台股權值</button>
+            <button class="tab-btn" data-cat="US_TECH">美股科技巨頭</button>
+            <button class="tab-btn" data-cat="MACRO">總體經濟/Fed</button>
+            <button class="tab-btn" data-cat="FOREX">外匯與債券</button>
+            <button class="tab-btn" data-cat="COMMODITY">大宗商品</button>
+          </div>
+
+          <div class="filter-row">
+            <input type="text" class="search-input" id="news-search-input" placeholder="🔍 搜尋新聞標題、來源或關鍵字 (如: SEC, CoinDesk, Gensler, 比特幣)...">
+            
+            <select class="select-filter" id="sentiment-select">
+              <option value="ALL">全部情緒</option>
+              <option value="BULLISH">📈 利多 (Bullish)</option>
+              <option value="BEARISH">📉 利空 (Bearish)</option>
+              <option value="NEUTRAL">⚖️ 中立 (Neutral)</option>
+            </select>
+
+            <select class="select-filter" id="impact-select">
+              <option value="ALL">全部影響層級</option>
+              <option value="HIGH">🔴 高影響力 (High)</option>
+              <option value="MEDIUM">🟡 中影響力 (Medium)</option>
+            </select>
+          </div>
+
+          <!-- Watchlist Quick Filter -->
+          <div class="watchlist-bar">
+            <span class="watchlist-label">🎯 蜘蛛感應重點：</span>
+            <div id="watchlist-tags-container" style="display:inline-flex; gap:6px; flex-wrap:wrap;">
+              <!-- Tags injected -->
+            </div>
+          </div>
+        </div>
+
+        <!-- News Feed Stream -->
+        <div class="news-feed" id="news-feed-container">
+          <!-- News cards injected -->
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: Export & Push Formats -->
+  <div class="modal-overlay" id="export-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">📤 晨報一鍵導出與推播格式</h3>
+        <button class="close-btn" id="close-modal-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="category-tabs" style="margin-bottom:14px;">
+          <button class="tab-btn active" id="tab-fmt-markdown">Markdown 格式</button>
+          <button class="tab-btn" id="tab-fmt-telegram">Telegram 推播格式</button>
+          <button class="tab-btn" id="tab-fmt-line">LINE Notify 格式</button>
+        </div>
+        <div class="export-code-box" id="export-code-content">
+          產出推播格式中...
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="close-modal-footer">關閉</button>
+        <button class="btn btn-primary" id="copy-export-btn">
+          <i data-lucide="copy"></i> 複製到剪貼簿
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: LINE Notification Settings -->
+  <div class="modal-overlay" id="line-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color:#22c55e;">🔔 LINE 自動化每日推播設定</h3>
+        <button class="close-btn" id="close-line-modal-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p style="font-size:13.5px; color:var(--text-muted); margin-bottom:14px;">
+          輸入您的 LINE 官方帳號 (Messaging API) Channel Access Token，系統將會在每日早上自動將當日最精華的財經與加密監管晨報發送至您的 LINE！
+        </p>
+
+        <div style="margin-bottom:12px;">
+          <label style="display:block; font-size:13px; font-weight:700; margin-bottom:4px; color:var(--text-main);">
+            LINE Channel Access Token
+          </label>
+          <input type="password" id="line-token-input" class="search-input" style="width:100%;" placeholder="貼上 LINE Channel Access Token...">
+        </div>
+
+        <div style="display:flex; gap:12px; margin-bottom:16px;">
+          <div style="flex:1;">
+            <label style="display:block; font-size:13px; font-weight:700; margin-bottom:4px; color:var(--text-main);">
+              每日定時推播時間
+            </label>
+            <input type="text" id="line-time-input" class="search-input" style="width:100%;" value="08:30" placeholder="HH:MM (例如 08:30)">
+          </div>
+          <div style="flex:1; display:flex; align-items:flex-end;">
+            <label style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:700; cursor:pointer;">
+              <input type="checkbox" id="line-enable-check" checked style="width:18px; height:18px;">
+              啟用每日自動推播
+            </label>
+          </div>
+        </div>
+
+        <div style="background:rgba(34, 197, 94, 0.1); border:1px solid rgba(34, 197, 94, 0.3); border-radius:8px; padding:12px; font-size:12.5px; color:#86efac;">
+          💡 <strong>如何取得 LINE Token (只需 1 分鐘)：</strong><br>
+          1. 登入 <a href="https://developers.line.biz/" target="_blank" style="color:#4ade80;">LINE Developers Console</a> 建立免費官方帳號。<br>
+          2. 進入 <strong>Messaging API</strong> 頁面發行 (Issue) Channel Access Token。<br>
+          3. 貼回上方點擊「儲存設定」即可！
+        </div>
+
+        <div id="line-status-msg" style="margin-top:10px; font-size:13px; font-weight:700;"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-line-test" style="border-color:#22c55e; color:#22c55e;">
+          發送連線測試
+        </button>
+        <button class="btn btn-primary" id="btn-line-push-now">
+          🚀 立刻推播今日晨報
+        </button>
+        <button class="btn btn-primary" id="btn-line-save" style="background:#22c55e;">
+          儲存設定
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client JavaScript -->
+  <script src="app.js?v=crypto_sec_v11"></script>
+</body>
+</html>

@@ -80,7 +80,8 @@ def refresh_all_data():
 refresh_all_data()
 
 class FinanceHubHandler(http.server.SimpleHTTPRequestHandler):
-    directory = STATIC_DIR
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=STATIC_DIR, **kwargs)
 
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
